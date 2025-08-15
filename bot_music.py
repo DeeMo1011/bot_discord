@@ -8,11 +8,11 @@ from flask import Flask
 from threading import Thread
 
 # -----------------------------
-# Flask web server สำหรับ keep-alive
+# Flask web server (keep-alive)
 # -----------------------------
 app = Flask(__name__)
 
-@app.route("!")
+@app.route("/")
 def home():
     return "Bot is running on Render!"
 
@@ -59,7 +59,16 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def from_url(cls, url, *, loop=None):
         loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+        try:
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+        except Exception as e:
+            print(f"[YTDL Error] Could not extract info: {e}")
+            return None
+
+        if not data:
+            print("[YTDL Error] No data returned")
+            return None
+
         if 'entries' in data:
             data = data['entries'][0]
         filename = data['url']
@@ -98,8 +107,13 @@ async def play(ctx, *, url):
             return await ctx.send("You are not in a voice channel!")
 
     player = await YTDLSource.from_url(url, loop=bot.loop)
-    ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+    if not player:
+        return await ctx.send("Failed to retrieve or play the URL!")
+
+    print("[DEBUG] Streaming URL:", player.url)
+    ctx.voice_client.play(player, after=lambda e: print(f'[Player error] {e}') if e else None)
     await ctx.send(f'Now playing: {player.title}')
+    print("[DEBUG] is_playing:", ctx.voice_client.is_playing())
 
 @bot.command()
 async def pause(ctx):
