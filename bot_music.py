@@ -28,8 +28,7 @@ ytdl = YoutubeDL(ytdl_format_options)
 
 # โหลด Opus library
 if not discord.opus.is_loaded():
-    opus_path = "/opt/homebrew/lib/libopus.dylib"  # Mac Homebrew path
-    discord.opus.load_opus(opus_path)
+    discord.opus.load_opus(None)
 
 # YTDLSource class
 class YTDLSource(discord.PCMVolumeTransformer):
