@@ -8,7 +8,7 @@ from flask import Flask
 from threading import Thread
 
 # -----------------------------
-# Flask web server (keep-alive)
+# Flask web server สำหรับ keep-alive
 # -----------------------------
 app = Flask(__name__)
 
@@ -26,7 +26,6 @@ def run_web():
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# ดึง Token จาก Environment Variable
 token = os.environ.get('DISCORD_TOKEN')
 if not token:
     raise ValueError("No DISCORD_TOKEN found in environment variables")
@@ -39,9 +38,13 @@ ytdl_format_options = {
     'ignoreerrors': True,
 }
 
+ffmpeg_path = shutil.which("ffmpeg")
+if not ffmpeg_path:
+    raise EnvironmentError("FFmpeg not found. Make sure it is installed.")
+
 ffmpeg_options = {
     'options': '-vn',
-    'executable': shutil.which("ffmpeg")
+    'executable': ffmpeg_path
 }
 
 ytdl = YoutubeDL(ytdl_format_options)
@@ -73,9 +76,8 @@ async def on_ready():
 @bot.command()
 async def join(ctx):
     if ctx.author.voice:
-        channel = ctx.author.voice.channel
-        await channel.connect()
-        await ctx.send(f"Joined {channel.name}")
+        await ctx.author.voice.channel.connect()
+        await ctx.send(f"Joined {ctx.author.voice.channel.name}")
     else:
         await ctx.send("You are not in a voice channel!")
 
@@ -121,5 +123,5 @@ async def stop(ctx):
 # Main run
 # -----------------------------
 if __name__ == "__main__":
-    Thread(target=run_web).start()  # รัน Flask ใน Thread
-    bot.run(token)                  # รัน Discord Bot
+    Thread(target=run_web).start()
+    bot.run(token)
