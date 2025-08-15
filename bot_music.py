@@ -9,7 +9,10 @@ import os
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-token = 'MTQwNTQ0MzQxODM1MTczNDg3Ng.GzsbUL.7uDsAbIX1vpwA1Clt5AK4aPorX53zbWhugcZR4'  # แนะนำเก็บใน env แทน hardcode
+# ใช้ Environment Variable สำหรับ token
+token = os.environ.get('DISCORD_TOKEN')
+if not token:
+    raise ValueError("No DISCORD_TOKEN found in environment variables")
 
 # YTDL + FFmpeg options
 ytdl_format_options = {
@@ -21,7 +24,7 @@ ytdl_format_options = {
 
 ffmpeg_options = {
     'options': '-vn',
-    'executable': shutil.which("ffmpeg")  # ใช้ path ของ ffmpeg
+    'executable': shutil.which("ffmpeg")  # Render ต้องมี ffmpeg
 }
 
 ytdl = YoutubeDL(ytdl_format_options)
@@ -101,4 +104,8 @@ async def stop(ctx):
         ctx.voice_client.stop()
         await ctx.send("Stopped the music.")
 
-bot.run(token)
+# รัน bot
+try:
+    bot.run(token)
+except Exception as e:
+    print("Bot crashed:", e)
