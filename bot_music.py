@@ -5,7 +5,7 @@ import asyncio
 import shutil
 import os
 from flask import Flask
-import threading
+from threading import Thread
 
 # -----------------------------
 # Flask web server สำหรับ keep-alive
@@ -14,7 +14,11 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Bot is running!"
+    return "Bot is running on Render!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
 
 # -----------------------------
 # Discord Bot setup
@@ -116,19 +120,10 @@ async def stop(ctx):
         await ctx.send("Stopped the music.")
 
 # -----------------------------
-# รัน bot ใน background thread
-# -----------------------------
-def run_bot():
-    try:
-        bot.run(token)
-    except Exception as e:
-        print("Bot crashed:", e)
-
-threading.Thread(target=run_bot).start()
-
-# -----------------------------
-# รัน Flask server
+# Main run
 # -----------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    # รันเว็บเซิร์ฟเวอร์ใน thread
+    Thread(target=run_web).start()
+    # รันบอท
+    bot.run(token)
