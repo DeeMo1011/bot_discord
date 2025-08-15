@@ -50,6 +50,9 @@ ffmpeg_options = {
 
 ytdl = YoutubeDL(ytdl_format_options)
 
+# -----------------------------
+# YTDLSource class
+# -----------------------------
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -57,24 +60,22 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data.get('title')
         self.url = data.get('url')
 
-@classmethod
-async def from_url(cls, url, *, loop=None):
-    loop = loop or asyncio.get_event_loop()
-    try:
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
-        if not data:
-            print("[YTDL Error] No data returned")
+    @classmethod
+    async def from_url(cls, url, *, loop=None):
+        loop = loop or asyncio.get_event_loop()
+        try:
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+            if not data:
+                print("[YTDL Error] No data returned")
+                return None
+            if 'entries' in data:
+                data = data['entries'][0]
+            filename = data['url']
+            print("[YTDL Debug] Streaming URL:", filename)
+            return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+        except Exception as e:
+            print("[YTDL Error] Could not extract info:", e)
             return None
-        if 'entries' in data:
-            data = data['entries'][0]
-        filename = data['url']
-        print("[YTDL Debug] Streaming URL:", filename)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
-    except Exception as e:
-        print("[YTDL Error] Could not extract info:", e)
-        return None
-
-
 
 # -----------------------------
 # Bot events and commands
@@ -144,5 +145,7 @@ async def stop(ctx):
 # Main run
 # -----------------------------
 if __name__ == "__main__":
+    # รันเว็บเซิร์ฟเวอร์ใน background thread
     Thread(target=run_web).start()
+    # รัน Discord bot
     bot.run(token)
