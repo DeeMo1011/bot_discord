@@ -8,7 +8,7 @@ from flask import Flask
 from threading import Thread
 
 # -----------------------------
-# Flask web server สำหรับ keep-alive
+# Flask web server (keep-alive)
 # -----------------------------
 app = Flask(__name__)
 
@@ -26,6 +26,7 @@ def run_web():
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+# ดึง Token จาก Environment Variable
 token = os.environ.get('DISCORD_TOKEN')
 if not token:
     raise ValueError("No DISCORD_TOKEN found in environment variables")
@@ -44,9 +45,6 @@ ffmpeg_options = {
 }
 
 ytdl = YoutubeDL(ytdl_format_options)
-
-if not discord.opus.is_loaded():
-    discord.opus.load_opus(None)
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -123,7 +121,5 @@ async def stop(ctx):
 # Main run
 # -----------------------------
 if __name__ == "__main__":
-    # รันเว็บเซิร์ฟเวอร์ใน thread
-    Thread(target=run_web).start()
-    # รันบอท
-    bot.run(token)
+    Thread(target=run_web).start()  # รัน Flask ใน Thread
+    bot.run(token)                  # รัน Discord Bot
