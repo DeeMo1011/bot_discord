@@ -4,12 +4,24 @@ from yt_dlp import YoutubeDL
 import asyncio
 import shutil
 import os
+from flask import Flask
+import threading
 
-# Intents
+# -----------------------------
+# Flask web server สำหรับ keep-alive
+# -----------------------------
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot is running!"
+
+# -----------------------------
+# Discord Bot setup
+# -----------------------------
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# ใช้ Environment Variable สำหรับ token
 token = os.environ.get('DISCORD_TOKEN')
 if not token:
     raise ValueError("No DISCORD_TOKEN found in environment variables")
@@ -24,16 +36,14 @@ ytdl_format_options = {
 
 ffmpeg_options = {
     'options': '-vn',
-    'executable': shutil.which("ffmpeg")  # Render ต้องมี ffmpeg
+    'executable': shutil.which("ffmpeg")
 }
 
 ytdl = YoutubeDL(ytdl_format_options)
 
-# โหลด Opus library
 if not discord.opus.is_loaded():
     discord.opus.load_opus(None)
 
-# YTDLSource class
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -50,13 +60,14 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url']
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
-# Bot events
+# -----------------------------
+# Bot events and commands
+# -----------------------------
 @bot.event
 async def on_ready():
     print("FFmpeg path:", ffmpeg_options['executable'])
     print(f'Bot is ready. Logged in as {bot.user}')
 
-# Commands
 @bot.command()
 async def join(ctx):
     if ctx.author.voice:
@@ -104,8 +115,20 @@ async def stop(ctx):
         ctx.voice_client.stop()
         await ctx.send("Stopped the music.")
 
-# รัน bot
-try:
-    bot.run(token)
-except Exception as e:
-    print("Bot crashed:", e)
+# -----------------------------
+# รัน bot ใน background thread
+# -----------------------------
+def run_bot():
+    try:
+        bot.run(token)
+    except Exception as e:
+        print("Bot crashed:", e)
+
+threading.Thread(target=run_bot).start()
+
+# -----------------------------
+# รัน Flask server
+# -----------------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
