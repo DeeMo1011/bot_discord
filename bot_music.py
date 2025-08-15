@@ -100,20 +100,25 @@ async def leave(ctx):
 
 @bot.command()
 async def play(ctx, *, url):
-    if not ctx.voice_client:
-        if ctx.author.voice:
-            await ctx.author.voice.channel.connect()
-        else:
-            return await ctx.send("You are not in a voice channel!")
+    try:
+        if not ctx.voice_client:
+            if ctx.author.voice:
+                await ctx.author.voice.channel.connect()
+            else:
+                return await ctx.send("You are not in a voice channel!")
 
-    player = await YTDLSource.from_url(url, loop=bot.loop)
-    if not player:
-        return await ctx.send("Failed to retrieve or play the URL!")
+        player = await YTDLSource.from_url(url, loop=bot.loop)
+        if not player:
+            return await ctx.send("Failed to retrieve or play the URL!")
 
-    print("[DEBUG] Streaming URL:", player.url)
-    ctx.voice_client.play(player, after=lambda e: print(f'[Player error] {e}') if e else None)
-    await ctx.send(f'Now playing: {player.title}')
-    print("[DEBUG] is_playing:", ctx.voice_client.is_playing())
+        print("[DEBUG] Streaming URL:", player.url)
+        ctx.voice_client.play(player, after=lambda e: print(f'[Player error] {e}') if e else None)
+        await ctx.send(f'Now playing: {player.title}')
+        print("[DEBUG] is_playing:", ctx.voice_client.is_playing())
+
+    except Exception as e:
+        print("[ERROR in play command]", e)
+        await ctx.send(f"An error occurred: {e}")
 
 @bot.command()
 async def pause(ctx):
