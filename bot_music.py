@@ -62,20 +62,18 @@ async def from_url(cls, url, *, loop=None):
     loop = loop or asyncio.get_event_loop()
     try:
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+        if not data:
+            print("[YTDL Error] No data returned")
+            return None
+        if 'entries' in data:
+            data = data['entries'][0]
+        filename = data['url']
+        print("[YTDL Debug] Streaming URL:", filename)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
     except Exception as e:
-        print(f"[YTDL Error] Could not extract info: {e}")
+        print("[YTDL Error] Could not extract info:", e)
         return None
 
-    if not data:
-        print("[YTDL Error] No data returned")
-        return None
-
-    if 'entries' in data:
-        data = data['entries'][0]
-
-    filename = data['url']
-    print("[YTDL Debug] Streaming URL:", filename)
-    return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
 # -----------------------------
